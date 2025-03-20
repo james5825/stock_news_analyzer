@@ -1,0 +1,82 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.env/
+
+# Distribution / packaging
+.Python
+dist/
+build/
+*.egg-info/
+*.egg
+*.whl
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# MyPy cache
+.mypy_cache/
+
+# Pytest cache
+.pytest_cache/
+
+# VS Code settings
+.vscode/
+
+# PyCharm files
+.idea/
+*.iml
+
+# MacOS files
+.DS_Store
+
+# Logs and databases
+*.log
+db.sqlite3
+
+# IDE specific files
+*.swp
+*.swo
+
+# Coverage reports
+htmlcov/
+.coverage
+*.cover
+.coverage.*
+
+# PyInstaller
+*.spec
+
+# Flask instance folder
+instance/
+
+# Celery
+celerybeat-schedule
+
+# Django stuff
+*.mo
+*.pot
+
+# Local settings
+local_settings.py
+
+# Pipenv virtual environment
+pipenv.lock
+
+# Pyenv
+.python-version
+
+# Gradio
+.gradio/
+
+# Custom cache and data folders
+**/news_cache/
+**/news_cache_na/
+**/data_stock_price/
+
+# Ignore _present folder
+**/_present/
