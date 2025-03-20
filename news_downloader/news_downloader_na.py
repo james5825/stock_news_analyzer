@@ -6,8 +6,8 @@ from typing import Optional, List
 import pandas as pd
 import requests
 
-from jtools.stock_news.config import Config, significant_companies
-from jtools.stock_news.news_downloader.model_news_article_na import NewsAPIArticle
+from config import Config, significant_companies
+from news_downloader.model_news_article_na import NewsAPIArticle
 
 
 class NewsCache:

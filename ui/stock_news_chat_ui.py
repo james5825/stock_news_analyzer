@@ -1,10 +1,10 @@
 import gradio as gr
 
-from ui.chatbot_simple import OllamaChatBot
+from ui.chatbot_sk import ChatbotSK
 
 
 class ChatBotUI:
-    def __init__(self, chatbot: OllamaChatBot):
+    def __init__(self, chatbot: ChatbotSK):
         self.chatbot = chatbot
 
 
@@ -26,6 +26,6 @@ class ChatBotUI:
 
 
 if __name__ == "__main__":
-    bot = OllamaChatBot()
+    bot = ChatbotSK()
     ui = ChatBotUI(bot)
     ui.launch()

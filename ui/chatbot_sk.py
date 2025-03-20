@@ -12,9 +12,10 @@ from embedding_kits.stock_news_embedding_plugin import RelatedNewsPlugin
 from new_analyzer.model_news_impact_analysis_result import NewsImpactAnalysisResult
 from new_analyzer.stock_news_analysis_plugin import StockNewsAnalysisPlugin
 from news_downloader.news_downloader_plugin import NewsDownloader3kPlugin
+from ui.text_composer import LLMTextComposer
 
 
-class OllamaChatBot:
+class ChatbotSK:
     def __init__(self):
         self.gradio_chat_history = []
 
@@ -43,7 +44,8 @@ class OllamaChatBot:
         self.kernel.add_plugin(RelatedNewsPlugin(), "RelatedNewsPlugin")
 
     # make a get setting funciton to get different setting with different plugins
-    def get_pe_settings(self, included_plugins: list[str], included_function: list[str], auto_invoke) -> PromptExecutionSettings:
+    @staticmethod
+    def _get_pe_settings(included_plugins: list[str], included_function: list[str], auto_invoke) -> PromptExecutionSettings:
         return PromptExecutionSettings(
             function_choice_behavior=FunctionChoiceBehavior.Auto(auto_invoke=auto_invoke)
             # .Required(filters={"included_functions": included_function}, auto_invoke=auto_invoke)
@@ -79,12 +81,6 @@ class OllamaChatBot:
 
         if "http://" in input_message or "https://" in input_message:
             # SK chat history & response
-            # analyze what to do, but not summery
-            self.sk_chat_history.add_system_message(f"always download the news ulr from {input_message} first"
-                                                    f"then analyze the news"
-                                                    f"then get related news"
-                                                    f"then analyze the news again based on the related news")
-
             self.sk_chat_history.add_user_message(input_message)
 
             ######################## work around due to semantic kernel not support sequence call in ollama  ########################
@@ -92,13 +88,13 @@ class OllamaChatBot:
             response_url = await self.chat_completion_service_open_ai.get_chat_message_content(
                 Temperature=0,
                 chat_history=self.sk_chat_history,
-                settings=self.get_pe_settings(included_plugins=["NewsDownloader3kPlugin"], included_function=["fetch_news_from_url"], auto_invoke=False),
+                settings=self._get_pe_settings(included_plugins=["NewsDownloader3kPlugin"], included_function=["fetch_news_from_url"], auto_invoke=False),
                 kernel=self.kernel
             )
             # incoming_news_content = await NewsDownloader3kPlugin.fetch_news_from_url_wrapper(response_url.items[0].arguments["url"])
             incoming_news_content = await NewsDownloader3kPlugin.fetch_news_from_url_wrapper(json.loads(response_url.items[0].arguments)["url"])
 
-            print("News:", incoming_news_content, "...\n\n--------\n\n")
+            print("News:", incoming_news_content[:100], "...\n\n--------\n\n")
             self.sk_chat_history.clear()
 
             ######## (1.5) check download news
@@ -109,7 +105,7 @@ class OllamaChatBot:
             response_is_news_block = await self.chat_completion_service_open_ai.get_chat_message_content(
                 Temperature=0,
                 chat_history=self.sk_chat_history,
-                settings=self.get_pe_settings(included_plugins=["NewsDownloader3kPlugin"], included_function=["is_news_content_normal"], auto_invoke=False),
+                settings=self._get_pe_settings(included_plugins=["NewsDownloader3kPlugin"], included_function=["is_news_content_normal"], auto_invoke=False),
                 kernel=self.kernel
             )
 
@@ -127,11 +123,11 @@ class OllamaChatBot:
                 "position_movement (long or short), "
                 "impact_days_min (1~5), and impact_days_max(1~10)."
                 "--------"
-                "NEWS: " + incoming_news_content[:100] + "...")
+                "NEWS:\n\n" + incoming_news_content + "...")
 
             pre_analysis_parameter_response = await self.chat_completion_service_open_ai.get_chat_message_content(
                 chat_history=self.sk_chat_history,
-                settings=self.get_pe_settings(included_plugins=["StockNewsAnalysisPlugin"], included_function=["analyze_stock_news"], auto_invoke=False),
+                settings=self._get_pe_settings(included_plugins=["StockNewsAnalysisPlugin"], included_function=["analyze_stock_news"], auto_invoke=False),
                 kernel=self.kernel
             )
             pre_analysis_result_str = pre_analysis_parameter_response.items[0].arguments
@@ -146,8 +142,8 @@ class OllamaChatBot:
             ######## (3) retrieve related news analysis
             index_search_result = await RelatedNewsPlugin.get_related_stock_news_wrapper(pre_analysis_result.news_summery)
 
-            related_news_pnl_ratio = self.calculate_related_news_pnl_ratio(index_search_result)
-            related_news_suggestion = self.compose_related_news_pnl_ratio_for_llm(index_search_result)
+            related_news_pnl_ratio = LLMTextComposer.calculate_related_news_pnl_ratio(index_search_result)
+            related_news_suggestion = LLMTextComposer.compose_related_news_pnl_ratio_for_llm(index_search_result)
             self.sk_chat_history.clear()
 
             ######## (4) analysis incoming news (final-analysis)
@@ -166,7 +162,7 @@ class OllamaChatBot:
 
             final_analysis = await self.chat_completion_service_open_ai.get_chat_message_content(
                 chat_history=self.sk_chat_history,
-                settings=self.get_pe_settings(included_plugins=["StockNewsAnalysisPlugin"], included_function=["analyze_stock_news"], auto_invoke=True),
+                settings=self._get_pe_settings(included_plugins=["StockNewsAnalysisPlugin"], included_function=["analyze_stock_news"], auto_invoke=True),
                 kernel=self.kernel
             )
 
@@ -174,10 +170,10 @@ class OllamaChatBot:
             post_analysis_result = NewsImpactAnalysisResult.from_dict(final_analysis_parameter)
 
             final_response = (f"News Summary: {pre_analysis_result.news_summery}\n\n"
-                              f"Pre-Analysis: {self.compose_analysis_for_response(pre_analysis_result)}\n\n"
+                              f"Pre-Analysis: {LLMTextComposer.compose_analysis_for_response(pre_analysis_result)}\n\n"
                               f"------------------------------------------------\n\n"
                               f"With related News Analysis: {final_analysis.content}\n\n"
-                              f"Analysis Parameters: {self.compose_analysis_for_response(post_analysis_result)}\n\n"
+                              f"Analysis Parameters: {LLMTextComposer.compose_analysis_for_response(post_analysis_result)}\n\n"
                               )
             self.sk_chat_history.clear()
             self.sk_chat_history.add_user_message(input_message)
@@ -187,56 +183,7 @@ class OllamaChatBot:
         else:
             other_chat = await self.chat_completion_service_open_ai.get_chat_message_content(
                 chat_history=self.sk_chat_history,
-                settings=self.get_pe_settings(included_plugins=["StockNewsAnalysisPlugin"], included_function=["analyze_stock_news"], auto_invoke=True),
+                settings=self._get_pe_settings(included_plugins=["StockNewsAnalysisPlugin"], included_function=["analyze_stock_news"], auto_invoke=True),
                 kernel=self.kernel
             )
             return other_chat.content
-
-    def compose_analysis_for_response(self, pre_analysis_result: NewsImpactAnalysisResult):
-        composed_response = (
-            f"Impact Weight: {pre_analysis_result.impact_weight}/10\n"
-            f"Position Movement: {pre_analysis_result.position_movement}\n"
-            f"Impact Duration: {pre_analysis_result.impact_days_min}-{pre_analysis_result.impact_days_max} days\n"
-        )
-        return composed_response
-
-    def compose_related_news_pnl_ratio_for_llm(self, search_result: NewsAnalysisDoc):
-        composed_string = ("Please also consider the following related news, But don't analysis them"
-                           "Only consider they are examples as they pressed and how they impact the market:\n\n")
-        for doc in search_result:
-            composed_string += (f"News Title: {doc.title}\n"
-                                f"PNL Ratio: {doc.pnl_ratio}\n"
-                                f"Impact Days Min: {doc.impact_days_min}\n"
-                                f"Impact Days Max: {doc.impact_days_max}\n\n")
-        return composed_string
-
-    def calculate_related_news_pnl_ratio(self, search_result):
-        related_news_docs = search_result
-
-        pnl_ratios = [doc.pnl_ratio for doc in related_news_docs]
-        min_impact_days = [doc.impact_days_min for doc in related_news_docs]
-        max_impact_days = [doc.impact_days_max for doc in related_news_docs]
-
-        pnl_ratio_max = max(pnl_ratios)
-        pnl_ratio_min = min(pnl_ratios)
-        pnl_ratio_avg = sum(pnl_ratios) / len(pnl_ratios)
-
-        min_impact_days_max = max(min_impact_days)
-        min_impact_days_min = min(min_impact_days)
-        min_impact_days_avg = sum(min_impact_days) / len(min_impact_days)
-
-        max_impact_days_max = max(max_impact_days)
-        max_impact_days_min = min(max_impact_days)
-        max_impact_days_avg = sum(max_impact_days) / len(max_impact_days)
-
-        return {
-            "pnl_ratio_max": pnl_ratio_max,
-            "pnl_ratio_min": pnl_ratio_min,
-            "pnl_ratio_avg": pnl_ratio_avg,
-            "min_impact_days_max": min_impact_days_max,
-            "min_impact_days_min": min_impact_days_min,
-            "min_impact_days_avg": min_impact_days_avg,
-            "max_impact_days_max": max_impact_days_max,
-            "max_impact_days_min": max_impact_days_min,
-            "max_impact_days_avg": max_impact_days_avg,
-        }

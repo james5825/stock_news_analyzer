@@ -1,20 +1,22 @@
 class NewsImpactAnalysisResult:
-    def __init__(self, position_movement: str, impact_weight: int, impact_days_min: int, impact_days_max: int, news_summery: str):
+    def __init__(self, position_movement: str, impact_weight: int, impact_days_min: int, impact_days_max: int, news_summery: str, possible_pnl_ratio: float = 0.0):
         self.position_movement = position_movement
         self.impact_weight = impact_weight
         self.impact_days_min = impact_days_min
         self.impact_days_max = impact_days_max
         self.news_summery = news_summery
+        self.possible_pnl_ratio = possible_pnl_ratio
 
     @classmethod
     def from_dict(cls, data: dict):
         try:
-            impact_weight = int(data.get("impact_weight", 0) or 0)
-            impact_days_min = int(data.get("minimum_impact_days", 0) or 0)
-            impact_days_max = int(data.get("maximum_impact_days", 0) or 0)
+            impact_weight = int(data.get("impact_weight", 1) or 1)
+            impact_days_min = int(data.get("minimum_impact_days", 1) or 1)
+            impact_days_max = int(data.get("maximum_impact_days", 1) or 1)
 
-            if not (1 <= impact_weight <= 10 and 1 <= impact_days_min <= 10 and 1 <= impact_days_max <= 10):
+            if not (1 <= impact_weight <= 10 and 0 <= impact_days_min <= 10 and 0 <= impact_days_max <= 10):
                 return None
+            possible_pnl_ratio = float(data.get("possible_pnl_ratio", 0.0) or 0.0)
         except ValueError:
             return None
 
@@ -23,6 +25,7 @@ class NewsImpactAnalysisResult:
             impact_weight=impact_weight,
             impact_days_min=impact_days_min,
             impact_days_max=impact_days_max,
+            possible_pnl_ratio=possible_pnl_ratio,
             news_summery=data.get("news_summery")
         )
 

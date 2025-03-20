@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from semantic_kernel.functions.kernel_function_decorator import kernel_function
 
@@ -12,13 +12,13 @@ class RelatedNewsPlugin:
                                                                 "Parameters:"
                                                                 "- news_summery: A summery of the news article."
                                                                 "- ticker: The stock ticker of the company. This can be optional, if not provided, the plugin will load all news articles.")
-    async def get_related_stock_news(self, news_summery: str, ticker: str) -> Optional[NewsAnalysisDoc]:
+    async def get_related_stock_news(self, news_summery: str, ticker: str) -> Optional[List[NewsAnalysisDoc]]:
         # TODO: add ticker to the search filter, or do the logic later after search
 
         return await self.get_related_stock_news_wrapper(news_summery, ticker)
 
     @staticmethod
-    async def get_related_stock_news_wrapper(news_summery: str, ticker: str = None) -> Optional[NewsAnalysisDoc]:
+    async def get_related_stock_news_wrapper(news_summery: str, ticker: str = None) -> Optional[List[NewsAnalysisDoc]]:
         # TODO: add ticker to the search filter, or do the logic later after search
         azure_search_manager = AzureSearchManager()
         results = azure_search_manager.search_similar_documents(query=news_summery)
