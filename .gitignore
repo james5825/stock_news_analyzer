@@ -81,3 +81,4 @@ pipenv.lock
 
 # Ignore _present folder
 **/_present/
+.env
