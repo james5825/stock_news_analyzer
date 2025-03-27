@@ -1,5 +1,4 @@
 import json
-import os
 
 import dotenv
 from azure.core.credentials import AzureKeyCredential
@@ -13,6 +12,7 @@ from azure.search.documents.indexes.models import (
 )
 from llama_index.embeddings.ollama import OllamaEmbedding
 
+from config import Config
 from embedding_kits.model_news_impact_analysis import NewsAnalysisDoc
 from new_analyzer.model_news_impact_analysis_result import NewsImpactAnalysisResult
 from news_downloader.model_news_article import NewsArticle
@@ -20,21 +20,13 @@ from news_downloader.model_news_article_na import NewsAPIArticle
 from stock_price.back_tester import BacktestResult
 from stock_price.trading_date_calculator import TradingHourStatus
 
-# Load environment variables from .env file
-dotenv.load_dotenv()
-
-AZURE_SEARCH_ENDPOINT = os.getenv("AZURE_SEARCH_ENDPOINT")
-AZURE_SEARCH_KEY = os.getenv("AZURE_SEARCH_KEY")
-AZURE_SEARCH_INDEX = "stock-news-index-dev"
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mistral")
-
 
 class AzureSearchManager:
-    def __init__(self, endpoint=AZURE_SEARCH_ENDPOINT, key=AZURE_SEARCH_KEY, index_name=AZURE_SEARCH_INDEX):
+    def __init__(self, endpoint=Config.AZURE_SEARCH_ENDPOINT, key=Config.AZURE_SEARCH_KEY, index_name=Config.AZURE_SEARCH_INDEX):
         self.index_name = index_name
         self.index_client = SearchIndexClient(endpoint=endpoint, credential=AzureKeyCredential(key))
         self.search_client = SearchClient(endpoint=endpoint, index_name=index_name, credential=AzureKeyCredential(key))
-        self.embedding_model = OllamaEmbedding(model_name=OLLAMA_MODEL)
+        self.embedding_model = OllamaEmbedding(model_name=Config.OLLAMA_MODEL_EMBEDDING)
         self.ensure_index_exists()
 
     def ensure_index_exists(self):
@@ -163,7 +155,8 @@ class AzureSearchManager:
 
 
 if __name__ == "__main__":
-    azure_search = AzureSearchManager(AZURE_SEARCH_ENDPOINT, AZURE_SEARCH_KEY, AZURE_SEARCH_INDEX)
+    dotenv.load_dotenv()
+    azure_search = AzureSearchManager(Config.AZURE_SEARCH_ENDPOINT, Config.AZURE_SEARCH_KEY, Config.AZURE_SEARCH_INDEX)
     # azure_search.insert_document(
     #     sector="Technology",
     #     ticker="MSFT",

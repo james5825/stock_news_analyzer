@@ -7,7 +7,7 @@ class Config:
     AZURE_SEARCH_ENDPOINT = os.getenv("AZURE_SEARCH_ENDPOINT")
     AZURE_SEARCH_KEY = os.getenv("AZURE_SEARCH_KEY")
     AZURE_SEARCH_INDEX = "stock-news-index-dev"
-    OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mistral")
+    OLLAMA_MODEL_EMBEDDING = os.getenv("OLLAMA_MODEL_EMBEDDING", "mistral")
 
     NEWSAPI_BASE_URL = os.getenv("NEWSAPI_BASE_URL")
     NEWSAPI_API_KEY = os.getenv("NEWSAPI_API_KEY")
