@@ -47,3 +47,10 @@ python feeder/news_price_data_feeder.py
 ### Data Feeder
 
 ![Another Image](_img/Data-Feeder.png)
+![Datafeed Flow](_img/Datafeeder.png)
+
+### Compare Flow with and without Rag
+![Chatbot Flow](_img/Back Test with and without Rag profit and lose.png)
+
+### Backtest Result Comparison by Ticker
+![Chatbot Flow](_img/Back Test with and without Rag profit and lose by ticker.png)
